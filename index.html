@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>회전수</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="회전수">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#eef1f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f151a" media="(prefers-color-scheme: dark)">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=IBM+Plex+Sans+KR:wght@400;600&display=swap">
+<style>
+html{-webkit-text-size-adjust:100%}body{margin:0}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}[hidden]{display:none!important}
+/* Layout: one-thumb tool. Product tabs on top, status strip, giant counter, huge +1 pad at the bottom where the thumb rests. */
+:root {
+  --bg: #eef1f3;
+  --panel: #ffffff;
+  --fg: #16202a;
+  --muted: #5d6b78;
+  --line: #d3dae0;
+  --accent: #0f6b8f;
+  --accent-ink: #ffffff;
+  --accent-press: #0a506b;
+  --fresh: #1d7a46;
+  --stale: #a35a00;
+  --danger: #b3261e;
+  --display: "Barlow Condensed", "Avenir Next Condensed", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans KR", -apple-system, "Apple SD Gothic Neo", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151a; --panel: #18212a; --fg: #e8eef3; --muted: #93a2b0; --line: #2a3742;
+    --accent: #2b9cc8; --accent-ink: #04141c; --accent-press: #1f7ea4;
+    --fresh: #4cc184; --stale: #f0a64a; --danger: #ff7a70; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151a; --panel: #18212a; --fg: #e8eef3; --muted: #93a2b0; --line: #2a3742;
+  --accent: #2b9cc8; --accent-ink: #04141c; --accent-press: #1f7ea4;
+  --fresh: #4cc184; --stale: #f0a64a; --danger: #ff7a70; color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body);
+  -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none;
+  overscroll-behavior: none;
+}
+.app {
+  height: 100%; max-width: 520px; margin: 0 auto; box-sizing: border-box;
+  padding-inline: 16px; padding-block: 10px 16px;
+  display: grid; grid-template-rows: auto auto 1fr auto auto; gap: 12px;
+}
+button { font: inherit; color: inherit; cursor: pointer; border: 0; touch-action: manipulation; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* product tabs */
+.tabs {
+  display: flex; gap: 8px; overflow-x: auto; margin-inline: -16px; padding-inline: 16px;
+  scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex: none; display: grid; justify-items: start; gap: 0; padding: 8px 14px; min-width: 84px;
+  border-radius: 12px; background: var(--panel); border: 1px solid var(--line); text-align: left;
+}
+.tab .n { font-size: 14px; font-weight: 600; max-width: 9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab .v { font-family: var(--display); font-size: 20px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--muted); }
+.tab.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.tab.on .v { color: var(--accent-ink); }
+.tab.add { display: grid; place-items: center; min-width: 64px; color: var(--accent); font-weight: 600; border-style: dashed; }
+
+/* status strip */
+.status {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+}
+.dot { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); flex: none; }
+.status.fresh .dot { background: var(--fresh); box-shadow: 0 0 0 4px color-mix(in srgb, var(--fresh) 25%, transparent); }
+.status.stale .dot { background: var(--stale); }
+.status-text { display: grid; min-width: 0; }
+.status-label { font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+.status-time { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.status-ago { margin-left: auto; font-size: 15px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.status.fresh .status-ago { color: var(--fresh); }
+.status.stale .status-ago { color: var(--stale); }
+
+/* counter */
+.counter { display: grid; place-items: center; align-content: center; gap: 4px; min-height: 0; }
+.counter-label {
+  font-size: 15px; font-weight: 600; letter-spacing: .02em; background: none; padding: 4px 10px; border-radius: 8px;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.counter-label::after { content: " ✎"; color: var(--muted); font-weight: 400; }
+.count {
+  font-family: var(--display); font-weight: 700; line-height: .9;
+  font-size: clamp(88px, 32vw, 180px); font-variant-numeric: tabular-nums;
+  background: none; padding: 0 12px; border-radius: 12px;
+}
+.count.bump { animation: bump .25s ease-out; }
+@keyframes bump { 0% { transform: scale(1.08); color: var(--accent); } 100% { transform: scale(1); } }
+.unit { font-family: var(--display); font-size: 22px; color: var(--muted); font-weight: 500; }
+.hint { font-size: 12px; color: var(--muted); }
+
+/* edit row */
+.row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.ghost {
+  padding: 14px 6px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line);
+  font-size: 15px; font-weight: 600;
+}
+.ghost:active { background: var(--line); }
+.ghost.minus { font-family: var(--display); font-size: 22px; }
+
+/* main pad */
+.plus {
+  width: 100%; height: clamp(120px, 24vh, 210px); border-radius: 20px;
+  background: var(--accent); color: var(--accent-ink);
+  font-family: var(--display); font-weight: 700; font-size: 72px; letter-spacing: .02em;
+  box-shadow: 0 6px 0 var(--accent-press);
+  transition: transform .05s, box-shadow .05s;
+}
+.plus:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--accent-press); }
+.plus small { display: block; font-family: var(--body); font-size: 14px; font-weight: 600; letter-spacing: 0; opacity: .85; margin-top: 2px; }
+
+/* sheets */
+.sheet-wrap {
+  position: fixed; inset: 0; background: color-mix(in srgb, #000 45%, transparent);
+  display: grid; align-items: end; z-index: 10;
+}
+.sheet {
+  background: var(--panel); border-radius: 18px 18px 0 0; max-width: 520px; width: 100%; margin: 0 auto;
+  box-sizing: border-box; padding-inline: 20px;
+  padding-block: 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  display: grid; gap: 14px; max-height: 80vh; overflow-y: auto; -webkit-user-select: text; user-select: text;
+}
+.sheet h2 { margin: 0; font-size: 18px; }
+.sheet p { margin: 0; color: var(--muted); font-size: 14px; }
+.sheet input {
+  font-size: 20px; padding: 12px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--fg); width: 100%; box-sizing: border-box; font-family: var(--body);
+}
+.sheet input.big { font-family: var(--display); font-size: 48px; font-weight: 700; text-align: center; padding: 8px; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btn { padding: 14px; border-radius: 12px; font-weight: 600; font-size: 16px; background: var(--bg); border: 1px solid var(--line); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+.btn.text-danger { color: var(--danger); background: none; }
+.err { color: var(--danger); font-size: 13px; min-height: 1em; }
+
+.log { list-style: none; margin: 0; padding: 0; display: grid; }
+.log li {
+  display: grid; grid-template-columns: 5.5em 1fr auto; gap: 10px; padding: 10px 2px;
+  border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; font-size: 15px;
+}
+.log .t { color: var(--muted); }
+.log .c { font-weight: 600; }
+.log .d.minus, .log .d.set { color: var(--stale); }
+.log .d.reset { color: var(--danger); }
+.empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
+.manage { list-style: none; margin: 0; padding: 0; display: grid; }
+.manage li { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.m-info { display: grid; min-width: 0; }
+.m-name { font-weight: 600; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.m-btn { padding: 10px 14px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); font-weight: 600; font-size: 14px; }
+.m-btn.del { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--line)); }
+.sync { font-size: 11px; color: var(--muted); text-align: center; margin-top: 8px; }
+
+@media (prefers-reduced-motion: reduce) { .count.bump { animation: none; } .plus { transition: none; } }
+@media (max-height: 680px) { .plus { font-size: 56px; } .hint { display: none; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="tabs" id="tabs" role="tablist" aria-label="제품"></div>
+
+  <div class="status" id="status" role="status" aria-live="polite">
+    <span class="dot"></span>
+    <div class="status-text">
+      <span class="status-label">마지막 입력</span>
+      <span class="status-time" id="lastTime">아직 없음</span>
+    </div>
+    <span class="status-ago" id="lastAgo"></span>
+  </div>
+
+  <div class="counter">
+    <button class="counter-label" id="itemName" aria-label="제품 이름 변경 또는 삭제">제품 1</button>
+    <button class="count" id="count" aria-label="숫자 직접 수정">0</button>
+    <span class="unit">회</span>
+    <span class="hint">숫자를 누르면 직접 고칠 수 있어요</span>
+  </div>
+
+  <div class="row">
+    <button class="ghost minus" id="minus" aria-label="1 빼기">−1</button>
+    <button class="ghost" id="openLog">기록</button>
+    <button class="ghost" id="openReset">초기화</button>
+  </div>
+
+  <div>
+    <button class="plus" id="plus" aria-label="1 더하기">+1<small id="plusName">제품 1</small></button>
+    <div class="sync" id="sync">이 아이폰에 저장됨 · 인터넷 없이도 동작</div>
+  </div>
+</div>
+
+<div class="sheet-wrap" id="editSheet" hidden>
+  <form class="sheet" id="editForm">
+    <h2 id="editTitle">회전수 직접 수정</h2>
+    <p>올바른 숫자를 입력하세요.</p>
+    <input class="big" id="editInput" type="number" inputmode="numeric" pattern="[0-9]*" min="0">
+    <div class="actions">
+      <button type="button" class="btn" data-close>취소</button>
+      <button type="submit" class="btn primary">저장</button>
+    </div>
+  </form>
+</div>
+
+<div class="sheet-wrap" id="nameSheet" hidden>
+  <form class="sheet" id="nameForm">
+    <h2 id="nameTitle">제품 추가</h2>
+    <input id="nameInput" type="text" maxlength="30" placeholder="예: A-200 브래킷" autocomplete="off">
+    <div class="err" id="nameErr"></div>
+    <div class="actions">
+      <button type="button" class="btn" data-close>취소</button>
+      <button type="submit" class="btn primary" id="nameSave">추가</button>
+    </div>
+    <button type="button" class="btn text-danger" id="askDelete" hidden>이 제품 삭제</button>
+  </form>
+</div>
+
+<div class="sheet-wrap" id="confirmSheet" hidden>
+  <div class="sheet">
+    <h2 id="confirmTitle"></h2>
+    <p id="confirmMsg"></p>
+    <div class="actions">
+      <button type="button" class="btn" data-close>취소</button>
+      <button type="button" class="btn danger" id="confirmOk"></button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-wrap" id="manageSheet" hidden>
+  <div class="sheet">
+    <h2>제품 관리</h2>
+    <ul class="manage" id="manageList"></ul>
+    <div class="actions">
+      <button type="button" class="btn" data-close>닫기</button>
+      <button type="button" class="btn primary" id="manageAdd">+ 제품 추가</button>
+    </div>
+    <button type="button" class="btn" id="openBackup">백업 · 복원</button>
+  </div>
+</div>
+
+<div class="sheet-wrap" id="backupSheet" hidden>
+  <div class="sheet">
+    <h2>백업 · 복원</h2>
+    <p>백업: 복사한 글을 메모 앱에 붙여넣어 두세요.<br>복원: 저장해 둔 글을 아래 칸에 붙여넣고 복원을 누르세요.</p>
+    <textarea id="backupText" rows="6" spellcheck="false" style="width:100%;box-sizing:border-box;font:13px ui-monospace,monospace;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg)"></textarea>
+    <div class="err" id="backupMsg"></div>
+    <div class="actions">
+      <button type="button" class="btn" id="backupCopy">백업 복사</button>
+      <button type="button" class="btn danger" id="backupRestore">복원</button>
+    </div>
+    <button type="button" class="btn" data-close>닫기</button>
+  </div>
+</div>
+
+<div class="sheet-wrap" id="logSheet" hidden>
+  <div class="sheet">
+    <h2 id="logTitle">최근 기록</h2>
+    <ul class="log" id="log"></ul>
+    <button type="button" class="btn" data-close>닫기</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const KEY = "rotation-counter-v2";
+  const OLD_KEY = "rotation-counter-v1";
+  const MAX_LOG = 200;
+  const $ = (id) => document.getElementById(id);
+  const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const fresh = () => { const id = newId(); return { items: [{ id, name: "제품 1", count: 0, lastAt: null, log: [] }], activeId: id, updatedAt: 0 }; };
+
+  // Accept the new shape, or convert the old single-counter shape.
+  function normalize(s) {
+    if (!s || typeof s !== "object") return null;
+    if (Array.isArray(s.items) && s.items.length) {
+      const activeId = s.items.some((i) => i.id === s.activeId) ? s.activeId : s.items[0].id;
+      return { items: s.items, activeId, updatedAt: s.updatedAt || 0 };
+    }
+    if (typeof s.count === "number") {
+      const id = newId();
+      return { items: [{ id, name: "제품 1", count: s.count, lastAt: s.lastAt || null, log: s.log || [] }], activeId: id, updatedAt: s.updatedAt || 0 };
+    }
+    return null;
+  }
+
+  let state = null;
+  try { state = normalize(JSON.parse(localStorage.getItem(KEY))) || normalize(JSON.parse(localStorage.getItem(OLD_KEY))); } catch (e) {}
+  if (!state) state = fresh();
+
+  const active = () => state.items.find((i) => i.id === state.activeId) || state.items[0];
+
+  // ---------- rendering ----------
+  const pad = (n) => String(n).padStart(2, "0");
+  const fmtTime = (t) => { const d = new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
+  const fmtDate = (t) => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()}`; };
+  const isToday = (t) => new Date(t).toDateString() === new Date().toDateString();
+  const num = (n) => n.toLocaleString("ko-KR");
+  function ago(t) {
+    const s = Math.max(0, Math.floor((Date.now() - t) / 1000));
+    if (s < 60) return `${s}초 전`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}분 전`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}시간 ${m % 60}분 전`;
+    return `${Math.floor(h / 24)}일 전`;
+  }
+
+  function renderTabs() {
+    const box = $("tabs");
+    box.replaceChildren();
+    for (const it of state.items) {
+      const b = document.createElement("button");
+      b.className = "tab" + (it.id === state.activeId ? " on" : "");
+      b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", it.id === state.activeId);
+      const n = document.createElement("span"); n.className = "n"; n.textContent = it.name;
+      const v = document.createElement("span"); v.className = "v"; v.textContent = num(it.count);
+      b.append(n, v);
+      b.addEventListener("click", () => {
+        if (it.id === state.activeId) return;
+        state = { ...state, activeId: it.id };
+        save(false);
+        render();
+      });
+      box.append(b);
+    }
+    const add = document.createElement("button");
+    add.className = "tab add"; add.textContent = "+ 제품";
+    add.addEventListener("click", () => openName(null));
+    const manage = document.createElement("button");
+    manage.className = "tab add"; manage.textContent = "관리";
+    manage.addEventListener("click", () => { renderManage(); open("manageSheet"); });
+    box.append(add, manage);
+    const on = box.querySelector(".tab.on");
+    if (on) on.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+
+  function renderStatus() {
+    const it = active(), st = $("status");
+    if (!it.lastAt) { $("lastTime").textContent = "아직 없음"; $("lastAgo").textContent = ""; st.className = "status"; return; }
+    $("lastTime").textContent = (isToday(it.lastAt) ? "오늘 " : fmtDate(it.lastAt) + " ") + fmtTime(it.lastAt);
+    $("lastAgo").textContent = ago(it.lastAt);
+    st.className = "status " + (Date.now() - it.lastAt < 60000 ? "fresh" : "stale");
+  }
+
+  function render() {
+    const it = active();
+    $("itemName").textContent = it.name;
+    $("plusName").textContent = it.name;
+    $("count").textContent = num(it.count);
+    renderTabs();
+    renderStatus();
+  }
+
+  function renderLog() {
+    const it = active(), ul = $("log");
+    $("logTitle").textContent = `${it.name} · 최근 기록`;
+    ul.replaceChildren();
+    if (!it.log.length) { const li = document.createElement("li"); li.className = "empty"; li.textContent = "아직 기록이 없어요."; ul.append(li); return; }
+    for (const e of it.log.slice(-50).reverse()) {
+      const li = document.createElement("li");
+      const t = document.createElement("span"); t.className = "t";
+      t.textContent = (isToday(e.t) ? "" : fmtDate(e.t) + " ") + fmtTime(e.t);
+      const d = document.createElement("span");
+      if (e.k === "set") { d.className = "d set"; d.textContent = "직접 수정"; }
+      else if (e.k === "reset") { d.className = "d reset"; d.textContent = "초기화"; }
+      else { d.className = "d " + (e.k === "-1" ? "minus" : ""); d.textContent = e.k; }
+      const c = document.createElement("span"); c.className = "c"; c.textContent = num(e.c) + "회";
+      li.append(t, d, c); ul.append(li);
+    }
+  }
+
+  // ---------- state changes ----------
+  function save(touch = true) {
+    if (touch) state = { ...state, updatedAt: Date.now() };
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  function changeCount(kind, newCount) {
+    const now = Date.now(), c = Math.max(0, newCount);
+    state = {
+      ...state,
+      items: state.items.map((it) => it.id !== state.activeId ? it : {
+        ...it, count: c, lastAt: now,
+        log: [...it.log, { t: now, k: kind, c }].slice(-MAX_LOG),
+      }),
+    };
+    save();
+    render();
+  }
+
+  $("plus").addEventListener("click", () => {
+    changeCount("+1", active().count + 1);
+    const c = $("count"); c.classList.remove("bump"); void c.offsetWidth; c.classList.add("bump");
+  });
+  $("minus").addEventListener("click", () => { if (active().count > 0) changeCount("-1", active().count - 1); });
+
+  // ---------- sheets ----------
+  const open = (id) => { $(id).hidden = false; };
+  const close = (id) => { $(id).hidden = true; };
+  document.querySelectorAll(".sheet-wrap").forEach((w) => {
+    w.addEventListener("click", (e) => { if (e.target === w || e.target.hasAttribute("data-close")) w.hidden = true; });
+  });
+
+  $("count").addEventListener("click", () => {
+    $("editTitle").textContent = `${active().name} 회전수 수정`;
+    $("editInput").value = active().count; open("editSheet");
+    setTimeout(() => { $("editInput").focus(); $("editInput").select(); }, 50);
+  });
+  $("editForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const v = parseInt($("editInput").value, 10);
+    if (Number.isFinite(v) && v >= 0 && v !== active().count) changeCount("set", v);
+    close("editSheet");
+  });
+
+  let confirmAction = null;
+  function askConfirm(title, msg, okLabel, fn) {
+    $("confirmTitle").textContent = title; $("confirmMsg").textContent = msg; $("confirmOk").textContent = okLabel;
+    confirmAction = fn; open("confirmSheet");
+  }
+  $("confirmOk").addEventListener("click", () => { close("confirmSheet"); if (confirmAction) confirmAction(); confirmAction = null; });
+
+  $("openReset").addEventListener("click", () => {
+    const it = active();
+    askConfirm(`${it.name}을(를) 0으로 초기화할까요?`, `현재 ${num(it.count)}회를 0으로 되돌립니다. 기록에는 남아요.`, "초기화", () => changeCount("reset", 0));
+  });
+  $("openLog").addEventListener("click", () => { renderLog(); open("logSheet"); });
+
+  // add / rename / delete product
+  let editingId = null;
+  function openName(id) {
+    editingId = id;
+    const it = id && state.items.find((i) => i.id === id);
+    $("nameTitle").textContent = it ? "제품 이름 변경" : "제품 추가";
+    $("nameSave").textContent = it ? "저장" : "추가";
+    $("nameInput").value = it ? it.name : "";
+    $("nameErr").textContent = "";
+    $("askDelete").hidden = !it;
+    open("nameSheet");
+    setTimeout(() => $("nameInput").focus(), 50);
+  }
+  $("itemName").addEventListener("click", () => openName(state.activeId));
+  $("nameForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = $("nameInput").value.trim();
+    if (!name) { $("nameErr").textContent = "제품 이름을 입력하세요."; return; }
+    if (state.items.some((i) => i.name === name && i.id !== editingId)) { $("nameErr").textContent = "같은 이름의 제품이 이미 있어요."; return; }
+    if (editingId) {
+      state = { ...state, items: state.items.map((i) => i.id === editingId ? { ...i, name } : i) };
+    } else {
+      const id = newId();
+      state = { ...state, items: [...state.items, { id, name, count: 0, lastAt: null, log: [] }], activeId: id };
+    }
+    save(); render(); close("nameSheet");
+  });
+  $("askDelete").addEventListener("click", () => { close("nameSheet"); askDeleteItem(editingId); });
+
+  function renderManage() {
+    const ul = $("manageList");
+    ul.replaceChildren();
+    for (const it of state.items) {
+      const li = document.createElement("li");
+      const info = document.createElement("div"); info.className = "m-info";
+      const n = document.createElement("span"); n.className = "m-name"; n.textContent = it.name;
+      const v = document.createElement("span"); v.className = "m-count"; v.textContent = num(it.count) + "회";
+      info.append(n, v);
+      const ren = document.createElement("button"); ren.type = "button"; ren.className = "m-btn"; ren.textContent = "이름";
+      ren.addEventListener("click", () => { close("manageSheet"); openName(it.id); });
+      const del = document.createElement("button"); del.type = "button"; del.className = "m-btn del"; del.textContent = "삭제";
+      del.addEventListener("click", () => { close("manageSheet"); askDeleteItem(it.id); });
+      li.append(info, ren, del);
+      ul.append(li);
+    }
+  }
+  $("manageAdd").addEventListener("click", () => { close("manageSheet"); openName(null); });
+
+  // backup / restore (data lives only on this iPhone)
+  $("openBackup").addEventListener("click", () => {
+    close("manageSheet");
+    $("backupText").value = JSON.stringify(state);
+    $("backupMsg").textContent = "";
+    open("backupSheet");
+  });
+  $("backupCopy").addEventListener("click", async () => {
+    const t = $("backupText");
+    t.value = JSON.stringify(state);
+    try { await navigator.clipboard.writeText(t.value); $("backupMsg").textContent = "복사했어요. 메모 앱에 붙여넣어 두세요."; }
+    catch (e) { t.focus(); t.select(); $("backupMsg").textContent = "글이 선택됐어요. 길게 눌러 복사하세요."; }
+  });
+  $("backupRestore").addEventListener("click", () => {
+    let s = null;
+    try { s = normalize(JSON.parse($("backupText").value)); } catch (e) {}
+    if (!s) { $("backupMsg").textContent = "백업 글이 올바르지 않아요. 복사한 글 전체를 붙여넣었는지 확인하세요."; return; }
+    askConfirm("백업으로 되돌릴까요?", `지금 데이터가 백업 내용(${s.items.length}개 제품)으로 바뀌어요.`, "복원", () => {
+      state = s; save(); render(); close("backupSheet");
+    });
+  });
+
+  function askDeleteItem(id) {
+    const it = state.items.find((i) => i.id === id);
+    if (!it) return;
+    if (state.items.length === 1) {
+      askConfirm(`${it.name}을(를) 비울까요?`, "제품이 하나뿐이라 삭제 대신 숫자와 기록을 모두 지우고 이름을 '제품 1'로 바꿉니다.", "비우기", () => {
+        state = { ...state, items: [{ ...it, name: "제품 1", count: 0, lastAt: null, log: [] }] };
+        save(); render();
+      });
+      return;
+    }
+    askConfirm(`${it.name}을(를) 삭제할까요?`, `${num(it.count)}회와 모든 기록이 지워지고 되돌릴 수 없어요.`, "삭제", () => {
+      const items = state.items.filter((i) => i.id !== it.id);
+      state = { ...state, items, activeId: state.activeId === it.id ? items[0].id : state.activeId };
+      save(); render();
+    });
+  }
+
+  setInterval(renderStatus, 1000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
+  render();
+
+  // keep the screen on while counting (optional)
+  async function wake() { try { if (navigator.wakeLock && !document.hidden) await navigator.wakeLock.request("screen"); } catch (e) {} }
+  wake(); document.addEventListener("visibilitychange", wake);
+
+  // ---------- offline + keep data ----------
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+})();
+</script>
+</body>
+</html>
